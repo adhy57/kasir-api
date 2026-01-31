@@ -157,9 +157,10 @@ func main() {
 	// CATEGORY API
 	http.HandleFunc("/api/categories", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		if r.Method == http.MethodGet {
+		switch r.Method {
+		case http.MethodGet:
 			json.NewEncoder(w).Encode(categories)
-		} else if r.Method == http.MethodPost {
+		case http.MethodPost:
 			createCategory(w, r)
 		}
 	})
@@ -172,32 +173,35 @@ func main() {
 			return
 		}
 
-		if r.Method == http.MethodGet {
+		switch r.Method {
+		case http.MethodGet:
 			getCategoryByID(w, r, id)
-		} else if r.Method == http.MethodPut {
+		case http.MethodPut:
 			updateCategory(w, r, id)
-		} else if r.Method == http.MethodDelete {
+		case http.MethodDelete:
 			deleteCategory(w, r, id)
 		}
 	})
 
 	// PRODUK API
 	http.HandleFunc("/api/produk/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
+		switch r.Method {
+		case http.MethodGet:
 			getProdukByID(w, r)
-		} else if r.Method == http.MethodPut {
+		case http.MethodPut:
 			updateProduk(w, r)
-		} else if r.Method == http.MethodDelete {
+		case http.MethodDelete:
 			deleteProduk(w, r)
 		}
 
 	})
 
 	http.HandleFunc("/api/produk", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
+		switch r.Method {
+		case http.MethodGet:
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(produk)
-		} else if r.Method == http.MethodPost {
+		case http.MethodPost:
 			var produkBaru Produk
 			err := json.NewDecoder(r.Body).Decode(&produkBaru)
 			if err != nil {

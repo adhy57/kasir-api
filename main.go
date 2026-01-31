@@ -8,6 +8,12 @@ import (
 	"strings"
 )
 
+type Category struct {
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
 type Produk struct {
 	ID    int    `json:"id"`
 	Nama  string `json:"nama"`
@@ -20,6 +26,8 @@ var produk = []Produk{
 	{ID: 2, Nama: "Vit 1000ml", Harga: 3000, Stok: 40},
 	{ID: 3, Nama: "kecap", Harga: 12000, Stok: 20},
 }
+
+var categories = []Category{}
 
 func getProdukByID(w http.ResponseWriter, r *http.Request) {
 	idStr := strings.TrimPrefix(r.URL.Path, "/api/produk/")
@@ -87,7 +95,93 @@ func deleteProduk(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Produk belum ada", http.StatusNotFound)
 }
 
+func createCategory(w http.ResponseWriter, r *http.Request) {
+	var newCategory Category
+	err := json.NewDecoder(r.Body).Decode(&newCategory)
+	if err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+	}
+
+	newCategory.ID = len(categories) + 1
+	categories = append(categories, newCategory)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(newCategory)
+}
+
+func getCategoryByID(w http.ResponseWriter, r *http.Request, id int) {
+	for _, category := range categories {
+		if category.ID == id {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(category)
+			return
+		}
+	}
+
+	http.Error(w, "Category not found", http.StatusNotFound)
+}
+
+func updateCategory(w http.ResponseWriter, r *http.Request, id int) {
+	for i, category := range categories {
+		if category.ID == id {
+			var updatedCategory Category
+			err := json.NewDecoder(r.Body).Decode(&updatedCategory)
+			if err != nil {
+				http.Error(w, "Invalid request", http.StatusBadRequest)
+				return
+			}
+
+			categories[i] = updatedCategory
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(updatedCategory)
+			return
+		}
+	}
+
+	http.Error(w, "Category not found", http.StatusNotFound)
+}
+
+func deleteCategory(w http.ResponseWriter, r *http.Request, id int) {
+	for i, category := range categories {
+		if category.ID == id {
+			categories = append(categories[:i], categories[i+1:]...)
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+	}
+
+	http.Error(w, "Category not found", http.StatusNotFound)
+}
+
 func main() {
+	// CATEGORY API
+	http.HandleFunc("/api/categories", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet {
+			json.NewEncoder(w).Encode(categories)
+		} else if r.Method == http.MethodPost {
+			createCategory(w, r)
+		}
+	})
+
+	http.HandleFunc("/api/categories/", func(w http.ResponseWriter, r *http.Request) {
+		idStr := strings.TrimPrefix(r.URL.Path, "/api/categories/")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			http.Error(w, "Invalid CategoryID", http.StatusBadRequest)
+			return
+		}
+
+		if r.Method == http.MethodGet {
+			getCategoryByID(w, r, id)
+		} else if r.Method == http.MethodPut {
+			updateCategory(w, r, id)
+		} else if r.Method == http.MethodDelete {
+			deleteCategory(w, r, id)
+		}
+	})
+
+	// PRODUK API
 	http.HandleFunc("/api/produk/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			getProdukByID(w, r)
